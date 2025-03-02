@@ -17,9 +17,8 @@
         .navbar {
             position: absolute;
             top: 0;
-            left: 0;
             width: 100%;
-            background-color: #1a5d1a;
+            background-color: #1a5d1a; /* Elegant dark green */
             display: flex;
             align-items: center;
             padding: 10px 20px;
@@ -56,13 +55,10 @@
         .content-wrapper {
             position: absolute;
             top: 100px;
-            left: 0;
-            width: 100%;
             padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            z-index: 900;
         }
         
         .controls {
@@ -72,11 +68,33 @@
             z-index: 999;
         }
         
+        button {
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 500;
+            font-size: 1em;
+            box-shadow: 0 4px 10px rgba(76, 175, 80, 0.3);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+        }
+        
+        button:hover {
+            background-color: #388e3c;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(76, 175, 80, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
         .instructions {
-            position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
             background-color: #e8f5e9;
             border-radius: 8px;
             padding: 15px 20px;
@@ -87,7 +105,6 @@
             margin: 0 auto 30px;
             font-size: 0.95em;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-            z-index: 800;
         }
         
         a {
@@ -139,38 +156,59 @@
     <script>
         AFRAME.registerComponent("video-controller", {
             init: function () {
-                const target = document.getElementById("target");
-                const btn = document.querySelector("button");
-                const video = document.getElementById("video");
-                const instructions = document.querySelector(".instructions");
-                // detect target found
-                target.addEventListener("targetFound", event => {
-                    console.log("target found");
-                    this.found = true;
-                    video.play();
-                    instructions.style.opacity = "0";
-                    setTimeout(() => {
-                        instructions.style.display = "none";
-                    }, 300);
+                this.targets = [
+                    { targetId: "target", videoId: "history" },
+                    { targetId: "target1", videoId: "intro" },
+                    { targetId: "target2", videoId: "equations" }
+                ];
+
+                this.instructions = document.querySelector(".instructions");
+                this.playButton = document.querySelector("button");
+                this.activeVideo = null;
+
+                this.setupTargets();
+                this.setupPlayButton();
+            },
+
+            setupTargets: function() {
+                this.targets.forEach(({ targetId, videoId }) => {
+                    const target = document.getElementById(targetId);
+                    const video = document.getElementById(videoId);
+
+                    target.addEventListener("targetFound", () => this.handleTargetFound(video));
+                    target.addEventListener("targetLost", () => this.handleTargetLost(video));
                 });
-                // detect target lost
-                target.addEventListener("targetLost", event => {
-                    console.log("target lost");
-                    this.found = false;
-                    video.pause();
-                    instructions.style.display = "block";
-                    setTimeout(() => {
-                        instructions.style.opacity = "1";
-                    }, 0);
+            },
+
+            setupPlayButton: function() {
+                this.playButton.addEventListener("click", () => {
+                    if (this.activeVideo) {
+                        this.activeVideo.play();
+                    }
                 });
-                // detect click event
-                btn.addEventListener("click", event => {
-                    console.log("btn click");
-                    if (this.found)
-                        video.play();
-                });
+            },
+
+            handleTargetFound: function(video) {
+                console.log("target found");
+                this.activeVideo = video;
+                video.play();
+                this.toggleInstructions(false);
+            },
+
+            handleTargetLost: function(video) {
+                console.log("target lost");
+                this.activeVideo = null;
+                video.pause();
+                this.toggleInstructions(true);
+            },
+
+            toggleInstructions: function(show) {
+                this.instructions.style.opacity = show ? "1" : "0";
+                setTimeout(() => {
+                    this.instructions.style.display = show ? "block" : "none";
+                }, show ? 0 : 300);
             }
-        })
+        });
     </script>
 </head>
 
@@ -201,12 +239,22 @@
         device-orientation-permission-ui="enabled: false" cursor="rayOrigin: mouse;"
         raycaster="objects: .clickable" embedded>
         <a-assets>
-            <video id="video" src="520.mp4" preload loop="true"></video>
+            <video id="history" class="video" src="video/history.mp4" preload loop="true"></video>
+            <video id="intro" class="video" src="video/intro.mp4" preload loop="true"></video>
+            <video id="equations" class="video" src="video/equations.mp4" preload loop="true"></video>
         </a-assets>
 
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
         <a-entity id="target" mindar-image-target="targetIndex: 0">
-            <a-plane class="clickable" material="src: #video; opacity: 1;" video-controller position="0 0 0" height="1" width="1">
+            <a-plane class="clickable" material="src: #history; opacity: 1;" video-controller position="0 0 0" height="3" width="3">
+            </a-plane>
+        </a-entity>
+        <a-entity id="target1" mindar-image-target="targetIndex: 1">
+            <a-plane class="clickable" material="src: #intro; opacity: 1;" video-controller position="0 0 0" height="3" width="3">
+            </a-plane>
+        </a-entity>
+        <a-entity id="target2" mindar-image-target="targetIndex: 2">
+            <a-plane class="clickable" material="src: #equations; opacity: 1;" video-controller position="0 0 0" height="3" width="3">
             </a-plane>
         </a-entity>
     </a-scene>
