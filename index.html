@@ -158,17 +158,26 @@
                 const target = document.getElementById("target");
                 const btn = document.querySelector("button");
                 const video = document.getElementById("video");
+                const instructions = document.querySelector(".instructions");
                 // detect target found
                 target.addEventListener("targetFound", event => {
                     console.log("target found");
                     this.found = true;
                     video.play();
+                    instructions.style.opacity = "0";
+                    setTimeout(() => {
+                        instructions.style.display = "none";
+                    }, 300);
                 });
                 // detect target lost
                 target.addEventListener("targetLost", event => {
                     console.log("target lost");
                     this.found = false;
                     video.pause();
+                    instructions.style.display = "block";
+                    setTimeout(() => {
+                        instructions.style.opacity = "1";
+                    }, 0);
                 });
                 // detect click event
                 btn.addEventListener("click", event => {
