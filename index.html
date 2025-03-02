@@ -155,6 +155,10 @@
     </style>
     <script>
         AFRAME.registerComponent("video-controller", {
+            schema: {
+                debug: { type: 'boolean', default: true }
+            },
+
             init: function () {
                 this.targets = [
                     { targetId: "target", videoId: "history" },
@@ -165,40 +169,111 @@
                 this.instructions = document.querySelector(".instructions");
                 this.playButton = document.querySelector("button");
                 this.activeVideo = null;
+                this.videoStates = new Map();
+                this.isPlaying = false;
 
                 this.setupTargets();
                 this.setupPlayButton();
+                this.setupVideoErrorHandling();
             },
 
             setupTargets: function() {
                 this.targets.forEach(({ targetId, videoId }) => {
                     const target = document.getElementById(targetId);
                     const video = document.getElementById(videoId);
+                    
+                    if (!target || !video) {
+                        console.error(`Missing target or video element: ${targetId} - ${videoId}`);
+                        return;
+                    }
 
-                    target.addEventListener("targetFound", () => this.handleTargetFound(video));
-                    target.addEventListener("targetLost", () => this.handleTargetLost(video));
+                    this.videoStates.set(videoId, { isReady: false, hasError: false });
+                    
+                    target.addEventListener("targetFound", () => this.handleTargetFound(video, videoId));
+                    target.addEventListener("targetLost", () => this.handleTargetLost(video, videoId));
+                });
+            },
+
+            setupVideoErrorHandling: function() {
+                this.targets.forEach(({ videoId }) => {
+                    const video = document.getElementById(videoId);
+                    if (!video) return;
+
+                    video.addEventListener('loadeddata', () => {
+                        const state = this.videoStates.get(videoId);
+                        if (state) {
+                            state.isReady = true;
+                            state.hasError = false;
+                        }
+                        if (this.data.debug) console.log(`Video ${videoId} loaded successfully`);
+                    });
+
+                    video.addEventListener('error', (e) => {
+                        const state = this.videoStates.get(videoId);
+                        if (state) {
+                            state.hasError = true;
+                            state.isReady = false;
+                        }
+                        console.error(`Error loading video ${videoId}:`, e.target.error);
+                    });
                 });
             },
 
             setupPlayButton: function() {
                 this.playButton.addEventListener("click", () => {
-                    if (this.activeVideo) {
-                        this.activeVideo.play();
+                    if (this.activeVideo && this.isVideoReady(this.activeVideo.id)) {
+                        this.playVideo(this.activeVideo);
                     }
                 });
             },
 
-            handleTargetFound: function(video) {
-                console.log("target found");
+            isVideoReady: function(videoId) {
+                const state = this.videoStates.get(videoId);
+                return state && state.isReady && !state.hasError;
+            },
+
+            playVideo: function(video) {
+                if (!video) return;
+                
+                const playPromise = video.play();
+                if (playPromise !== undefined) {
+                    playPromise
+                        .then(() => {
+                            this.isPlaying = true;
+                            if (this.data.debug) console.log(`Playing video: ${video.id}`);
+                        })
+                        .catch(error => {
+                            console.error('Video playback failed:', error);
+                            this.isPlaying = false;
+                        });
+                }
+            },
+
+            handleTargetFound: function(video, videoId) {
+                if (this.data.debug) console.log(`Target found for video: ${videoId}`);
+                
+                if (!this.isVideoReady(videoId)) {
+                    console.warn(`Video ${videoId} is not ready for playback`);
+                    return;
+                }
+
                 this.activeVideo = video;
-                video.play();
+                this.playVideo(video);
                 this.toggleInstructions(false);
             },
 
-            handleTargetLost: function(video) {
-                console.log("target lost");
-                this.activeVideo = null;
-                video.pause();
+            handleTargetLost: function(video, videoId) {
+                if (this.data.debug) console.log(`Target lost for video: ${videoId}`);
+                
+                if (video) {
+                    video.pause();
+                    this.isPlaying = false;
+                }
+                
+                if (this.activeVideo === video) {
+                    this.activeVideo = null;
+                }
+                
                 this.toggleInstructions(true);
             },
 
@@ -207,6 +282,20 @@
                 setTimeout(() => {
                     this.instructions.style.display = show ? "block" : "none";
                 }, show ? 0 : 300);
+            },
+
+            remove: function() {
+                // Cleanup when component is removed
+                this.targets.forEach(({ videoId }) => {
+                    const video = document.getElementById(videoId);
+                    if (video) {
+                        video.pause();
+                        video.currentTime = 0;
+                    }
+                });
+                this.videoStates.clear();
+                this.activeVideo = null;
+                this.isPlaying = false;
             }
         });
     </script>
