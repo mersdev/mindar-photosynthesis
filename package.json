@@ -1,0 +1,23 @@
+{
+  "name": "mindar-photosynthesis",
+  "version": "1.0.0",
+  "description": "An interactive Augmented Reality (AR) educational application that brings photosynthesis to life through immersive visualization. Built with MindAR and A-Frame, this web-based AR experience helps students better understand the photosynthesis process.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mersdev/mindar-photosynthesis.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mersdev/mindar-photosynthesis/issues"
+  },
+  "homepage": "https://github.com/mersdev/mindar-photosynthesis#readme",
+  "dependencies": {
+    "http-server": "^14.1.1"
+  }
+}
